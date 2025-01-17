@@ -1,0 +1,296 @@
+<template>
+
+    <lightning-card>
+        <div class="navButton">
+            <lightning-button variant="brand" label={navBtnLabel} onclick={togglePages}></lightning-button>
+        </div>
+        
+        <template lwc:if={spinner}>
+            <lightning-spinner alternative-text="Loading" size="medium" variant="brand"></lightning-spinner>
+        </template>
+
+        <lightning-layout horizontal-align="center" vertical-align="start" multiple-rows="true" style="width: auto;margin-bottom: 10px; border-bottom: 1px sold black;">
+
+            <lightning-layout-item size="3">
+                <lightning-combobox label="Org/User Level" value={orgOrUserLevelValue} options={orgOrUserLevelOptions} onchange={handleUserOrOrgChange}></lightning-combobox>
+                <template lwc:if={showUserId}>
+                    <lightning-layout-item size="3">
+                    <c-lwc-lookup lookup-label="User Name" object-api-name="User" icon-name="standard:user" 
+                          onrecordselection={onUserSelection} message-from-child={PlaceholderUser}>
+                       </c-lwc-lookup>
+                    </lightning-layout-item>
+                    
+                </template>
+            </lightning-layout-item>
+            
+            <lightning-layout-item size="3">
+                <lightning-combobox label="Get Object by" value={getObjectByValue} options={getObjectByOptions} onchange={handlegetObjectByChange}></lightning-combobox>
+                <template lwc:if={showRecIdField}>
+                    <lightning-layout-item size="3">
+                      <lightning-input type="text" label="Enter first 3/15/18 Digits of Record Id" onchange={handleRecIdChange}></lightning-input>
+                      <template lwc:if={objectNamevalue}>
+                        <lightning-badge label={objectNamevalue} class="slds-theme_success"></lightning-badge>
+                      </template>
+                    </lightning-layout-item>
+                    
+                </template>
+                <template lwc:if={showObjectField}>
+                    <lightning-layout-item size="3">
+                        <c-lwc-lookup lookup-label="Object Name"  icon-name="standard:entity" 
+                          onrecordselection={onObjectSelection} message-from-child={PlaceholderObject} custom-search-object="true">
+                       </c-lwc-lookup>
+                    </lightning-layout-item>
+                    
+                </template>
+            </lightning-layout-item>
+            <template lwc:if={fieldPage}>
+                <lightning-layout-item size="3">
+                    <c-lwc-lookup lookup-label="Field Name" object-api-name={objectNamevalue} icon-name="standard:sobject_collection" 
+                              onrecordselection={onFieldSelection} message-from-child={PlaceholderField} custom-search-field="true">
+                           </c-lwc-lookup>
+                </lightning-layout-item>
+            </template>
+            
+            <lightning-layout-item size="3">
+                <lightning-combobox label={permissionLabel} value={permissionValue} options={permissionOptions} onchange={handleFieldPermissionChange}></lightning-combobox>
+            </lightning-layout-item>
+            <lightning-layout-item size="12" style="text-align: center;">
+              <lightning-button variant="success" label="Get Details" onclick={handleGetDetails} ></lightning-button>
+            </lightning-layout-item>
+
+        </lightning-layout>
+
+
+        <!-- Field Permissions UI -->
+        <template if:true={fieldNameValueOnUI}>
+            <lightning-accordion allow-multiple-sections-open active-section-name={defaultSectionName}>
+
+                <!-- Below is the Profile Section -->
+                <lightning-accordion-section label="Profile" name="Profile">
+                    <template lwc:if={cloneProfileDetails}>
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-no-row-hover">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th scope="col"> Profile ID </th>
+                                    <th scope="col"> Profile Name </th>
+                                    <th scope="col"> Field Name </th>
+                                    <th scope="col"> Read </th>
+                                    <th scope="col"> Edit </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template lwc:if={cloneProfileDetails} for:each={cloneProfileDetails} for:item="fp">
+                                    <tr class="slds-hint-parent" key={fp.Id} data-style={fp.Id}>
+                                        <th scope="row"> {fp.Parent.Profile.Id} </th>
+                                        <th scope="row"> {fp.Parent.Profile.Name} </th>
+                                        <th scope="row"> {fieldNameValueOnUI} </th> 
+                                        <th scope="row"> <lightning-input name={fp.Id} data-id="Read" data-option={fp.uniqueKeyRead} type="checkbox" checked={fp.PermissionsRead} onchange={handleReadChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={fp.Id} data-id="Edit" data-option={fp.uniqueKeyEdit} type="checkbox" checked={fp.PermissionsEdit} onchange={handleEditChange}></lightning-input> </th>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                    <template lwc:else>Uer Profile / Other Profiles are not having Read/Edit Access.</template>
+                </lightning-accordion-section>
+
+
+                <!-- Below is Permission Set Group Section -->
+                <lightning-accordion-section label="Permission Set Groups" name="Permission Set Groups">
+                    <template lwc:if={clonePsgDetails} for:each={clonePsgDetails} for:item="psg">
+                        <lightning-accordion-section  style="border: none;" label={psg.PermissionSetGroupMasterLabel} key ={psg.PermissionSetGroupMasterLabel}>
+                            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-no-row-hover">
+                                <thead>
+                                    <tr class="slds-line-height_reset">
+                                        <th scope="col"> Permission Set ID </th>
+                                        <th scope="col"> Permission Set Name </th>
+                                        <th scope="col"> Field Name </th>
+                                        <th scope="col"> Read </th>
+                                        <th scope="col"> Edit </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template lwc:if={psg.FieldPermissionsList} for:each={psg.FieldPermissionsList} for:item="fp">
+                                        <tr class="slds-hint-parent" key={fp.Id}  data-style={fp.Id}>
+                                            <th scope="row"> {fp.ParentId} </th>
+                                            <th scope="row"> {fp.Parent.Label} </th>
+                                            <th scope="row"> {fieldNameValueOnUI} </th>
+                                            <th scope="row"> <lightning-input name={fp.Id} data-id="Read" data-option={fp.uniqueKeyRead} type="checkbox" checked={fp.PermissionsRead} onchange={handleReadChange}></lightning-input> </th>
+                                            <th scope="row"> <lightning-input name={fp.Id} data-id="Edit" data-option={fp.uniqueKeyEdit} type="checkbox" checked={fp.PermissionsEdit} onchange={handleEditChange}></lightning-input> </th>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                    
+                        </lightning-accordion-section>
+                    </template>
+                    <template lwc:else> No User Assigned Permission Set Groups / Other Permission Set Groups are having Read/Edit Access. </template>
+                </lightning-accordion-section>
+
+                <!-- Below is Permission Set Section -->
+                <lightning-accordion-section label="Permission Sets" name="Permission Sets">
+                    <template lwc:if={clonePsDetails}>
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-no-row-hover">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th scope="col"> Permission Set ID </th>
+                                    <th scope="col"> Permission Set Name </th>
+                                    <th scope="col"> Field Name </th>
+                                    <th scope="col"> Read </th>
+                                    <th scope="col"> Edit </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template lwc:if={clonePsDetails} for:each={clonePsDetails} for:item="fp">
+                                    <tr class="slds-hint-parent" key={fp.Id}  data-style={fp.Id}>
+                                        <th scope="row"> {fp.ParentId} </th>
+                                        <th scope="row"> {fp.Parent.Label} </th>
+                                        <th scope="row"> {fieldNameValueOnUI} </th>
+                                        <th scope="row"> <lightning-input name={fp.Id} data-id="Read" data-option={fp.uniqueKeyRead} type="checkbox" checked={fp.PermissionsRead} onchange={handleReadChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={fp.Id} data-id="Edit" data-option={fp.uniqueKeyEdit} type="checkbox" checked={fp.PermissionsEdit} onchange={handleEditChange}></lightning-input> </th>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                    <template lwc:else>No User Assigned Permission Sets / Other Permission Sets are having Read/Edit Access.</template>
+                </lightning-accordion-section>
+            </lightning-accordion>
+
+            <div style="text-align: center;">
+                <lightning-button variant="brand" label="Save" onclick={handleSave} ></lightning-button>
+            </div>
+        </template>
+
+
+
+        <!-- Object Permissions UI -->
+        <template lwc:if={showObjData}>
+            <lightning-accordion allow-multiple-sections-open active-section-name={defaultSectionName}>
+
+                <!-- Below is the Profile Section -->
+                <lightning-accordion-section label="Profile" name="Profile">
+                    <template lwc:if={cloneProfileDetails}>
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-no-row-hover">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th scope="col"> Profile ID </th>
+                                    <th scope="col"> Profile Name </th>
+                                    <th scope="col"> Object Name </th>
+                                    <th scope="col"> Read </th>
+                                    <th scope="col"> Create </th>
+                                    <th scope="col"> Edit </th>
+                                    <th scope="col"> Delete </th>
+                                    <th scope="col"> View All </th>
+                                    <th scope="col"> Modify All </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template lwc:if={cloneProfileDetails} for:each={cloneProfileDetails} for:item="pr">
+                                    <tr class="slds-hint-parent" key={pr.Id} data-style={pr.Id}>
+                                        <th scope="row"> {pr.Parent.Profile.Id} </th>
+                                        <th scope="row"> {pr.Parent.Profile.Name} </th>
+                                        <th scope="row"> {pr.SobjectType} </th> 
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="Read" data-option={pr.uniqueKeyRead} type="checkbox" checked={pr.PermissionsRead} onchange={handleReadChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="Create" data-option={pr.uniqueKeyCreate} type="checkbox" checked={pr.PermissionsCreate} onchange={handleCreateChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="Edit" data-option={pr.uniqueKeyEdit} type="checkbox" checked={pr.PermissionsEdit} onchange={handleEditChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="Delete" data-option={pr.uniqueKeyDelete} type="checkbox" checked={pr.PermissionsDelete} onchange={handleDeleteChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="ViewAll" data-option={pr.uniqueKeyViewAll} type="checkbox" checked={pr.PermissionsViewAllRecords} onchange={handleViewAllChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="ModifyAll" data-option={pr.uniqueKeyModifyAll} type="checkbox" checked={pr.PermissionsModifyAllRecords} onchange={handleModifyAllChange}></lightning-input> </th>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                    <template lwc:else>User Profile / Other Profiles are not having Read/Edit Access.</template>
+                </lightning-accordion-section>
+
+
+                <!-- Below is Permission Set Group Section -->
+                <lightning-accordion-section label="Permission Set Groups" name="Permission Set Groups">
+                    <template lwc:if={clonePsgDetails} for:each={clonePsgDetails} for:item="psg">
+                        <lightning-accordion-section  style="border: none;" label={psg.PermissionSetGroupMasterLabel} key ={psg.PermissionSetGroupMasterLabel}>
+                            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-no-row-hover">
+                                <thead>
+                                    <tr class="slds-line-height_reset">
+                                        <th scope="col"> Permission Set ID </th>
+                                        <th scope="col"> Permission Set Name </th>
+                                        <th scope="col"> Object Name </th>
+                                        <th scope="col"> Read </th>
+                                        <th scope="col"> Create </th>
+                                        <th scope="col"> Edit </th>
+                                        <th scope="col"> Delete </th>
+                                        <th scope="col"> View All </th>
+                                        <th scope="col"> Modify All </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template lwc:if={psg.FieldPermissionsList} for:each={psg.FieldPermissionsList} for:item="pr">
+                                        <tr class="slds-hint-parent" key={pr.Id} data-style={pr.Id}>
+                                            <th scope="row"> {pr.Parent.Id} </th>
+                                            <th scope="row"> {pr.Parent.Label} </th>
+                                            <th scope="row"> {pr.SobjectType} </th> 
+                                            <th scope="row"> <lightning-input name={pr.Id} data-id="Read" data-option={pr.uniqueKeyRead} type="checkbox" checked={pr.PermissionsRead} onchange={handleReadChange}></lightning-input> </th>
+                                            <th scope="row"> <lightning-input name={pr.Id} data-id="Create" data-option={pr.uniqueKeyCreate} type="checkbox" checked={pr.PermissionsCreate} onchange={handleCreateChange}></lightning-input> </th>
+                                            <th scope="row"> <lightning-input name={pr.Id} data-id="Edit" data-option={pr.uniqueKeyEdit} type="checkbox" checked={pr.PermissionsEdit} onchange={handleEditChange}></lightning-input> </th>
+                                            <th scope="row"> <lightning-input name={pr.Id} data-id="Delete" data-option={pr.uniqueKeyDelete} type="checkbox" checked={pr.PermissionsDelete} onchange={handleDeleteChange}></lightning-input> </th>
+                                            <th scope="row"> <lightning-input name={pr.Id} data-id="ViewAll" data-option={pr.uniqueKeyViewAll} type="checkbox" checked={pr.PermissionsViewAllRecords} onchange={handleViewAllChange}></lightning-input> </th>
+                                            <th scope="row"> <lightning-input name={pr.Id} data-id="ModifyAll" data-option={pr.uniqueKeyModifyAll} type="checkbox" checked={pr.PermissionsModifyAllRecords} onchange={handleModifyAllChange}></lightning-input> </th>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                    
+                        </lightning-accordion-section>
+                    </template>
+                    <template lwc:else> No User Assigned Permission Set Groups / Other Permission Set Groups are having Read/Edit Access. </template>
+                </lightning-accordion-section>
+
+                <!-- Below is Permission Set Section -->
+                <lightning-accordion-section label="Permission Sets" name="Permission Sets">
+                    <template lwc:if={clonePsDetails}>
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-no-row-hover">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th scope="col"> Permission Set ID </th>
+                                    <th scope="col"> Permission Set Name </th>
+                                    <th scope="col"> Object Name </th>
+                                    <th scope="col"> Read </th>
+                                    <th scope="col"> Create </th>
+                                    <th scope="col"> Edit </th>
+                                    <th scope="col"> Delete </th>
+                                    <th scope="col"> View All </th>
+                                    <th scope="col"> Modify All </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template lwc:if={clonePsDetails} for:each={clonePsDetails} for:item="pr">
+                                    <tr class="slds-hint-parent" key={pr.Id} data-style={pr.Id}>
+                                        <th scope="row"> {pr.Parent.Id} </th>
+                                        <th scope="row"> {pr.Parent.Label} </th>
+                                        <th scope="row"> {pr.SobjectType} </th> 
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="Read" data-option={pr.uniqueKeyRead} type="checkbox" checked={pr.PermissionsRead} onchange={handleReadChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="Create" data-option={pr.uniqueKeyCreate} type="checkbox" checked={pr.PermissionsCreate} onchange={handleCreateChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="Edit" data-option={pr.uniqueKeyEdit} type="checkbox" checked={pr.PermissionsEdit} onchange={handleEditChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="Delete" data-option={pr.uniqueKeyDelete} type="checkbox" checked={pr.PermissionsDelete} onchange={handleDeleteChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="ViewAll" data-option={pr.uniqueKeyViewAll} type="checkbox" checked={pr.PermissionsViewAllRecords} onchange={handleViewAllChange}></lightning-input> </th>
+                                        <th scope="row"> <lightning-input name={pr.Id} data-id="ModifyAll" data-option={pr.uniqueKeyModifyAll} type="checkbox" checked={pr.PermissionsModifyAllRecords} onchange={handleModifyAllChange}></lightning-input> </th>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                    <template lwc:else>No User Assigned Permission Sets / Other Permission Sets are having Read/Edit Access.</template>
+
+                </lightning-accordion-section>
+            </lightning-accordion>
+
+            <div style="text-align: center;">
+                <lightning-button variant="brand" label="Save" onclick={handleSave} ></lightning-button>
+            </div>
+        </template>
+
+
+    </lightning-card>
+    
+</template>

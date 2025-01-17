@@ -1,0 +1,14 @@
+lightning-layout lightning-layout-item{
+    padding: 5px;
+}
+
+lightning-accordion lightning-accordion-section{
+    margin-left: 50px;
+}
+
+.navButton{
+    display: flex;
+    justify-content: end;
+    align-items: flex-end;
+    margin-right: 5%;
+}
